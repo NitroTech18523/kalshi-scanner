@@ -1,0 +1,291 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Matrix Kalshi Scanner</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=VT323&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#020604; --panel:rgba(6,20,12,.72); --panel2:rgba(10,30,18,.6);
+  --line:rgba(0,255,140,.16); --line2:rgba(0,255,140,.32);
+  --g:#00ff8c; --g2:#00c46c; --g3:#0a7a45; --gdim:rgba(0,255,140,.55);
+  --ink:#d6ffe9; --ink2:#8fd9b1; --mute:#4f8a6a;
+  --red:#ff4d6d; --redbg:rgba(255,77,109,.12); --amber:#ffc34d;
+  --glow:0 0 12px rgba(0,255,140,.35);
+  --mono:'JetBrains Mono',ui-monospace,Consolas,monospace; --retro:'VT323',var(--mono);
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--mono);font-size:13px}
+body{min-height:100vh;overflow-x:hidden}
+#rain{position:fixed;inset:0;z-index:0;opacity:.16;pointer-events:none}
+.scan{position:fixed;inset:0;z-index:1;pointer-events:none;
+  background:repeating-linear-gradient(to bottom,rgba(0,0,0,0) 0 2px,rgba(0,0,0,.18) 3px);mix-blend-mode:multiply}
+.vignette{position:fixed;inset:0;z-index:1;pointer-events:none;background:radial-gradient(ellipse at center,rgba(0,0,0,0) 55%,rgba(0,0,0,.65) 100%)}
+.wrap{position:relative;z-index:2;max-width:1440px;margin:0 auto;padding:20px 20px 40px}
+header{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:18px}
+.logo{font-family:var(--retro);font-size:40px;line-height:1;color:var(--g);text-shadow:var(--glow);letter-spacing:2px}
+.logo span{color:var(--ink2)}
+.sub{color:var(--mute);font-size:11px;letter-spacing:.14em;text-transform:uppercase;margin-top:4px}
+.status{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.pill{border:1px solid var(--line2);background:var(--panel);padding:6px 12px;border-radius:999px;font-size:11px;color:var(--ink2);backdrop-filter:blur(6px);white-space:nowrap}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--g);box-shadow:0 0 8px var(--g);margin-right:7px;animation:pulse 1.6s infinite}
+.dot.off{background:var(--amber);box-shadow:0 0 8px var(--amber)}
+@keyframes pulse{50%{opacity:.35}}
+.tabs{display:flex;gap:6px;margin-bottom:16px}
+.tab{background:none;border:1px solid var(--line);color:var(--mute);padding:7px 16px;border-radius:8px;font-family:var(--mono);font-size:12px;letter-spacing:.1em;cursor:pointer}
+.tab.on{color:var(--bg);background:var(--g);border-color:var(--g);box-shadow:var(--glow);font-weight:700}
+.grid{display:grid;gap:14px}
+.kpis{grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px 16px;backdrop-filter:blur(8px);position:relative;overflow:hidden}
+.card:before{content:"";position:absolute;inset:0 0 auto 0;height:1px;background:linear-gradient(90deg,transparent,var(--g),transparent);opacity:.5}
+.k-label{color:var(--mute);font-size:10px;letter-spacing:.16em;text-transform:uppercase}
+.k-val{font-family:var(--retro);font-size:clamp(24px,2.3vw,34px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.05;margin-top:6px;color:var(--ink);font-variant-numeric:tabular-nums}
+.k-sub{color:var(--mute);font-size:11px;margin-top:2px}
+.pos{color:var(--g)} .neg{color:var(--red)}
+.k-val.pos{text-shadow:var(--glow)}
+.row2{grid-template-columns:2fr 1fr;margin-top:14px}
+@media(max-width:1000px){.row2{grid-template-columns:1fr}}
+h2{margin:0 0 12px;font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink2);font-weight:500;display:flex;justify-content:space-between;align-items:center}
+h2 .hint{color:var(--mute);letter-spacing:.05em;text-transform:none;font-size:11px}
+.chart{position:relative;height:260px}
+.chart svg{width:100%;height:100%;display:block;overflow:visible}
+.tip{position:absolute;pointer-events:none;background:rgba(2,10,6,.95);border:1px solid var(--line2);border-radius:8px;padding:7px 10px;font-size:11px;color:var(--ink);white-space:nowrap;display:none;z-index:5;box-shadow:var(--glow)}
+.tip b{color:var(--g)}
+table{width:100%;border-collapse:collapse;font-size:12px;font-variant-numeric:tabular-nums}
+th{color:var(--mute);font-weight:500;text-align:left;font-size:10px;letter-spacing:.12em;text-transform:uppercase;padding:0 8px 8px;border-bottom:1px solid var(--line)}
+td{padding:8px;border-bottom:1px solid rgba(0,255,140,.06);white-space:nowrap}
+tr:hover td{background:rgba(0,255,140,.04)}
+td.r,th.r{text-align:right}
+.side{font-size:10px;font-weight:700;padding:2px 7px;border-radius:4px;letter-spacing:.08em}
+.side.L{color:var(--bg);background:var(--g)} .side.S{color:#fff;background:var(--red)}
+.tscroll{overflow-x:auto}
+.bar{position:relative;height:6px;border-radius:3px;background:linear-gradient(90deg,rgba(255,77,109,.5),rgba(255,255,255,.08) 33%,rgba(0,255,140,.5));min-width:120px}
+.bar i{position:absolute;top:-4px;width:3px;height:14px;background:#fff;border-radius:2px;box-shadow:0 0 6px #fff}
+.bar u{position:absolute;top:-3px;width:1px;height:12px;background:var(--mute)}
+.feed{font-family:var(--mono);font-size:12px;max-height:430px;overflow:auto;display:flex;flex-direction:column;gap:6px}
+.sig{border-left:2px solid var(--g);padding:6px 10px;background:var(--panel2);border-radius:0 8px 8px 0}
+.sig.S{border-color:var(--red)} .sig.skip{opacity:.5}
+.sig .t{color:var(--mute);font-size:10px}
+.sig .lv{color:var(--ink2);margin-top:3px}
+.empty{color:var(--mute);padding:26px 0;text-align:center;font-family:var(--retro);font-size:22px}
+.cursor:after{content:"█";animation:blink 1s steps(1) infinite;margin-left:4px;color:var(--g)}
+@keyframes blink{50%{opacity:0}}
+.mt{margin-top:14px}
+.legend{display:flex;gap:14px;color:var(--ink2);font-size:11px}
+.legend i{display:inline-block;width:14px;height:2px;vertical-align:middle;margin-right:6px}
+.hide{display:none}
+.bt-note{color:var(--mute);font-size:11px;line-height:1.6;margin-top:10px}
+.small{font-size:11px;color:var(--mute)}
+::-webkit-scrollbar{width:8px;height:8px}::-webkit-scrollbar-thumb{background:var(--g3);border-radius:4px}::-webkit-scrollbar-track{background:transparent}
+
+.row3{grid-template-columns:1fr 2fr}@media(max-width:1000px){.row3{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<canvas id="rain"></canvas><div class="scan"></div><div class="vignette"></div>
+<div class="wrap">
+  <header>
+    <div>
+      <div class="logo">MATRIX<span>//</span>KALSHI</div>
+      <div class="sub" id="sub">market scanner · paper trading</div>
+    </div>
+    <div class="status">
+      <div class="pill"><span class="dot" id="dot"></span><span id="st">connecting…</span></div>
+      <div class="pill" id="next">next scan —</div>
+      <div class="pill" id="clock">—</div>
+    </div>
+  </header>
+
+  <div class="tabs">
+    <button class="tab on" data-tab="live">LIVE</button>
+    <button class="tab" data-tab="bt">RESEARCH</button>
+  </div>
+
+  <section id="live">
+    <div class="grid kpis" id="kpis"></div>
+    <div class="grid row2">
+      <div class="card">
+        <h2>Paper equity <span class="hint" id="eqhint"></span></h2>
+        <div class="chart" id="eqchart"><div class="tip"></div></div>
+      </div>
+      <div class="card">
+        <h2>Opportunity feed <span class="hint">newest first</span></h2>
+        <div class="feed" id="feed"></div>
+      </div>
+    </div>
+    <div class="grid row3 mt">
+      <div class="card">
+        <h2>Last scan</h2>
+        <div id="scanbox"></div>
+      </div>
+      <div class="card">
+        <h2>By strategy</h2>
+        <div id="strat"></div>
+      </div>
+    </div>
+    <div class="card mt">
+      <h2>Open positions <span class="hint" id="openhint"></span></h2>
+      <div class="tscroll" id="open" style="max-height:460px;overflow:auto"></div>
+    </div>
+    <div class="grid row2 mt">
+      <div class="card">
+        <h2>Settled</h2>
+        <div class="tscroll" id="settled" style="max-height:420px;overflow:auto"></div>
+      </div>
+      <div class="card">
+        <h2>Watchlist <span class="hint">wide spreads, active volume: maker ideas, no trades</span></h2>
+        <div class="tscroll" id="watch" style="max-height:420px;overflow:auto"></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="bt" class="hide">
+    <div class="grid kpis" id="btkpis"></div>
+    <div class="grid row2 mt">
+      <div class="card">
+        <h2>Is the price right? <span class="hint">settled markets: price vs how often YES won</span></h2>
+        <div class="chart" id="calib" style="height:300px"><div class="tip"></div></div>
+        <div class="legend mt"><span><i style="background:#00ff8c"></i>actual YES win rate</span><span><i style="background:#4f8a6a"></i>perfectly priced</span></div>
+      </div>
+      <div class="card">
+        <h2>Buy at the ask, hold to settlement <span class="hint">return per $ after fees · 90% range</span></h2>
+        <div class="tscroll" id="buckets" style="max-height:380px;overflow:auto"></div>
+      </div>
+    </div>
+    <div class="card mt">
+      <h2>Rule simulations <span class="hint" id="simhint"></span></h2>
+      <div id="rules"></div>
+      <div class="chart mt" id="btchart" style="height:260px"><div class="tip"></div></div>
+      <div class="bt-note" id="btnote"></div>
+    </div>
+  </section>
+</div>
+
+<script>
+// ---------- digital rain ----------
+(function(){
+  const c=document.getElementById('rain'),x=c.getContext('2d');let w,h,cols,drops;
+  const chars='アイウエオカキクケコサシスセソタチツテトナニヌネノ0123456789$₿Ξ◎';
+  function rs(){w=c.width=innerWidth;h=c.height=innerHeight;cols=Math.floor(w/16);drops=Array(cols).fill(0).map(()=>Math.random()*-60)}
+  rs();addEventListener('resize',rs);
+  setInterval(()=>{x.fillStyle='rgba(2,6,4,.14)';x.fillRect(0,0,w,h);x.font='14px monospace';
+    for(let i=0;i<cols;i++){const y=drops[i]*16;x.fillStyle=Math.random()>.97?'#d6ffe9':'#00ff8c';
+      x.fillText(chars[Math.random()*chars.length|0],i*16,y);if(y>h&&Math.random()>.975)drops[i]=0;drops[i]++}},60);
+})();
+
+// ---------- helpers ----------
+const $=id=>document.getElementById(id);
+const usd=(v,s=false)=>v==null?'—':(s&&v>0?'+':'')+(v<0?'-':'')+'$'+Math.abs(v).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
+const pct=(v,s=false)=>v==null?'—':(s&&v>0?'+':'')+(v*100).toFixed(1)+'%';
+const px=v=>v==null?'—':v>=100?v.toLocaleString(undefined,{maximumFractionDigits:2}):v>=1?v.toFixed(4):v.toFixed(6);
+const cls=v=>v==null?'':v>0?'pos':v<0?'neg':'';
+const sym=s=>s.replace('USDT','');
+const t=s=>{if(!s)return'—';const d=new Date(s.replace(' ','T'));return d.toLocaleString(undefined,{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})};
+const dur=(a,b)=>{const m=(new Date((b||new Date().toISOString()).replace(' ','T'))-new Date(a.replace(' ','T')))/6e4;return m<60?Math.round(m)+'m':m<1440?(m/60).toFixed(1)+'h':(m/1440).toFixed(1)+'d'};
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+function kpi(label,val,sub,c){return `<div class="card"><div class="k-label">${label}</div><div class="k-val ${c||''}">${val}</div><div class="k-sub">${sub||'&nbsp;'}</div></div>`}
+
+// ---------- line chart with crosshair ----------
+function lineChart(el,pts,base,fmtY){
+  const tip=el.querySelector('.tip');el.querySelectorAll('svg').forEach(n=>n.remove());
+  if(!pts.length){el.insertAdjacentHTML('afterbegin','<svg></svg>');tip.style.display='none';return}
+  const W=el.clientWidth,H=el.clientHeight,P={l:62,r:12,t:10,b:24};
+  const xs=pts.map(p=>+new Date(p[0])),ys=pts.map(p=>p[1]);
+  let y0=Math.min(...ys,base??Infinity),y1=Math.max(...ys,base??-Infinity);if(y0===y1){y0-=1;y1+=1}const pad=(y1-y0)*.08;y0-=pad;y1+=pad;
+  const x0=xs[0],x1=xs[xs.length-1]===x0?x0+1:xs[xs.length-1];
+  const X=v=>P.l+(v-x0)/(x1-x0)*(W-P.l-P.r),Y=v=>P.t+(1-(v-y0)/(y1-y0))*(H-P.t-P.b);
+  let d='';pts.forEach((p,i)=>d+=(i?'L':'M')+X(xs[i]).toFixed(1)+','+Y(ys[i]).toFixed(1));
+  const area=d+`L${X(xs[xs.length-1])},${H-P.b}L${X(x0)},${H-P.b}Z`;
+  const up=ys[ys.length-1]>=(base??ys[0]);const col=up?'#00ff8c':'#ff4d6d';
+  let g='';for(let i=0;i<=4;i++){const v=y0+(y1-y0)*i/4,y=Y(v);g+=`<line x1="${P.l}" x2="${W-P.r}" y1="${y}" y2="${y}" stroke="rgba(0,255,140,.07)"/><text x="${P.l-8}" y="${y+4}" fill="#4f8a6a" font-size="10" text-anchor="end">${fmtY(v)}</text>`}
+  let xl='';for(let i=0;i<=4;i++){const v=x0+(x1-x0)*i/4;xl+=`<text x="${X(v)}" y="${H-6}" fill="#4f8a6a" font-size="10" text-anchor="middle">${new Date(v).toLocaleDateString(undefined,{month:'short',day:'numeric'})}</text>`}
+  const bl=base!=null?`<line x1="${P.l}" x2="${W-P.r}" y1="${Y(base)}" y2="${Y(base)}" stroke="#4f8a6a" stroke-dasharray="3 4"/>`:'';
+  const id='g'+Math.random().toString(36).slice(2,7);
+  el.insertAdjacentHTML('afterbegin',`<svg viewBox="0 0 ${W} ${H}"><defs><linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${col}" stop-opacity=".28"/><stop offset="1" stop-color="${col}" stop-opacity="0"/></linearGradient><filter id="f${id}"><feGaussianBlur stdDeviation="2.2"/></filter></defs>${g}${xl}${bl}<path d="${area}" fill="url(#${id})"/><path d="${d}" fill="none" stroke="${col}" stroke-width="3" opacity=".45" filter="url(#f${id})"/><path d="${d}" fill="none" stroke="${col}" stroke-width="2" stroke-linejoin="round"/><line class="xh" y1="${P.t}" y2="${H-P.b}" stroke="rgba(214,255,233,.35)" visibility="hidden"/><circle class="pt" r="4.5" fill="${col}" stroke="#020604" stroke-width="2" visibility="hidden"/><rect x="${P.l}" y="0" width="${W-P.l-P.r}" height="${H}" fill="transparent"/></svg>`);
+  const svg=el.querySelector('svg'),xh=svg.querySelector('.xh'),pt=svg.querySelector('.pt');
+  svg.onmousemove=e=>{const r=svg.getBoundingClientRect(),mx=(e.clientX-r.left)*(W/r.width);const tv=x0+(mx-P.l)/(W-P.l-P.r)*(x1-x0);
+    let lo=0,hi=xs.length-1;while(hi-lo>1){const m=(lo+hi)>>1;xs[m]<tv?lo=m:hi=m}const i=Math.abs(xs[lo]-tv)<Math.abs(xs[hi]-tv)?lo:hi;
+    const cx=X(xs[i]),cy=Y(ys[i]);xh.setAttribute('x1',cx);xh.setAttribute('x2',cx);xh.setAttribute('visibility','visible');pt.setAttribute('cx',cx);pt.setAttribute('cy',cy);pt.setAttribute('visibility','visible');
+    tip.innerHTML=`${new Date(xs[i]).toLocaleString(undefined,{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})}<br><b>${fmtY(ys[i])}</b>`+(base!=null?` <span class="${cls(ys[i]-base)}">(${pct(ys[i]/base-1,true)})</span>`:'');
+    tip.style.display='block';const tl=cx*(r.width/W);tip.style.left=Math.min(tl+12,r.width-tip.offsetWidth-4)+'px';tip.style.top=Math.max(0,cy*(r.height/H)-40)+'px'};
+  svg.onmouseleave=()=>{xh.setAttribute('visibility','hidden');pt.setAttribute('visibility','hidden');tip.style.display='none'};
+}
+
+
+// ---------- calibration chart (two lines on one 0-1 axis) ----------
+function calibChart(el, rows){
+  const tip=el.querySelector('.tip');el.querySelectorAll('svg').forEach(n=>n.remove());
+  if(!rows||!rows.length){return}
+  const W=el.clientWidth,H=el.clientHeight,P={l:44,r:10,t:10,b:28};
+  const mx=Math.min(1,Math.max(...rows.map(r=>Math.max(r.price,r.win)))*1.05)||1;
+  const X=v=>P.l+v/mx*(W-P.l-P.r),Y=v=>P.t+(1-v/mx)*(H-P.t-P.b);
+  let g='';for(let i=0;i<=4;i++){const v=mx*i/4;g+=`<line x1="${P.l}" x2="${W-P.r}" y1="${Y(v)}" y2="${Y(v)}" stroke="rgba(0,255,140,.07)"/><text x="${P.l-6}" y="${Y(v)+4}" fill="#4f8a6a" font-size="10" text-anchor="end">${Math.round(v*100)}%</text><text x="${X(v)}" y="${H-8}" fill="#4f8a6a" font-size="10" text-anchor="middle">${Math.round(v*100)}¢</text>`}
+  const diag=`<line x1="${X(0)}" y1="${Y(0)}" x2="${X(mx)}" y2="${Y(mx)}" stroke="#4f8a6a" stroke-dasharray="4 4" stroke-width="2"/>`;
+  let d='';rows.forEach((r,i)=>d+=(i?'L':'M')+X(r.price).toFixed(1)+','+Y(r.win).toFixed(1));
+  let dots='';rows.forEach((r,i)=>dots+=`<circle data-i="${i}" cx="${X(r.price)}" cy="${Y(r.win)}" r="5" fill="#00ff8c" stroke="#020604" stroke-width="2"/>`);
+  el.insertAdjacentHTML('afterbegin',`<svg viewBox="0 0 ${W} ${H}">${g}${diag}<path d="${d}" fill="none" stroke="#00ff8c" stroke-width="2"/>${dots}</svg>`);
+  const svg=el.querySelector('svg');
+  svg.onmousemove=e=>{const r=svg.getBoundingClientRect(),mxp=(e.clientX-r.left)*(W/r.width);let bi=0,bd=1e9;rows.forEach((q,i)=>{const dd=Math.abs(X(q.price)-mxp);if(dd<bd){bd=dd;bi=i}});const q=rows[bi];
+    tip.innerHTML=`YES priced ${q.label}<br>implied <b>${(q.price*100).toFixed(1)}%</b> · actual <b>${(q.win*100).toFixed(1)}%</b><br><span class="small">${q.n} market-hours</span>`;tip.style.display='block';tip.style.left=Math.min(X(q.price)*(r.width/W)+12,r.width-tip.offsetWidth-4)+'px';tip.style.top='8px'};
+  svg.onmouseleave=()=>tip.style.display='none';
+}
+
+let S=null,tab='live';
+const TYPES={ARB_NO_BASKET:'NO-basket arb',ARB_LADDER:'Ladder arb',LONGSHOT_FADE:'Longshot fade',FAVORITE_YES:'Favorite (YES 90-95¢)',WIDE_SPREAD:'Wide spread'};
+function ago(s){if(!s)return'—';const m=(Date.now()-new Date(s))/6e4;return m<1?'just now':m<60?Math.round(m)+'m ago':m<1440?(m/60).toFixed(1)+'h ago':(m/1440).toFixed(1)+'d ago'}
+function until(s){if(!s)return'—';const m=(new Date(s)-Date.now())/6e4;return m<0?'closed':m<60?Math.round(m)+'m':m<1440?(m/60).toFixed(1)+'h':(m/1440).toFixed(1)+'d'}
+const cents=v=>v==null?'—':(v*100).toFixed(v<0.1?1:0)+'¢';
+
+const usd0=v=>v==null?'—':(v<0?'-':'')+'$'+Math.abs(v).toLocaleString(undefined,{maximumFractionDigits:0});
+function render(){
+  if(!S)return;const st=S.stats,cf=S.config,lv=S.live;
+  $('sub').textContent=`market scanner · paper trading · bankroll ${usd(cf.bankroll)} · scan every ${cf.scan_minutes} min`;
+  const run=lv.status==='running'||lv.status==='scanning';$('dot').className='dot'+(run?'':' off');
+  const age=lv.last_scan?(Date.now()-new Date(lv.last_scan))/6e4:1e9;
+  if(SRC==='static'){const stale=age>45;$('dot').className='dot'+(stale?' off':'');$('st').textContent=(stale?'STALE · ':'WEB · ')+'updated '+ago(lv.last_scan);}
+  else $('st').textContent=lv.status==='scanning'?'SCANNING…':run?'ONLINE':lv.status;
+  const pnl=st.equity-cf.bankroll;
+  $('kpis').innerHTML=
+    kpi('Paper equity',usd0(st.equity),`start ${usd(cf.bankroll)}`,'')+
+    kpi('Total P&L',usd(pnl,true),pct(pnl/cf.bankroll,true),cls(pnl))+
+    kpi('Realized P&L',usd(st.realized,true),st.roi==null?'nothing settled yet':`${pct(st.roi,true)} on capital used`,cls(st.realized))+
+    kpi('Cash',usd0(st.cash),`${usd(st.open_cost)} tied up`,'')+
+    kpi('Open positions',S.open.length,`worth ${usd(st.open_value)} now`,'')+
+    kpi('Settled',st.settled,st.settled?`${pct(st.wins/st.settled)} won`:'—','')+
+    kpi('Markets scanned',lv.scan&&lv.scan.markets?lv.scan.markets.toLocaleString():'—',`${lv.n_scans} scans · ${lv.arbs_seen} arbs seen`,'');
+  const eq=S.equity.map(e=>[e.ts,e.equity]);$('eqhint').textContent=eq.length?`${eq.length} snapshots`:'';
+  if(tab==='live')lineChart($('eqchart'),eq,cf.bankroll,v=>'$'+Math.round(v).toLocaleString());
+  $('feed').innerHTML=S.opps.length?S.opps.map(o=>`<div class="sig ${o.taken?'':'skip'}"><div class="t">${t(o.ts)} · ${TYPES[o.type]||o.type} · edge ${(o.edge*100).toFixed(1)}¢</div><div><b>${esc(o.title)}</b></div><div class="lv">${esc(o.info)}${o.taken?' · <span class="pos">paper: '+esc(o.note)+'</span>':' · <i>'+esc(o.note)+'</i>'}</div></div>`).join(''):'<div class="empty cursor">scanning for opportunities</div>';
+  const sc=lv.scan||{};
+  $('scanbox').innerHTML=sc.ts?`<table><tr><td>When</td><td class="r">${ago(sc.ts)}</td></tr><tr><td>Events / markets</td><td class="r">${(sc.events||0).toLocaleString()} / ${(sc.markets||0).toLocaleString()}</td></tr><tr><td>Scan time</td><td class="r">${Math.round(sc.secs)}s</td></tr>${Object.entries(sc.counts||{}).map(([k,v])=>`<tr><td>${TYPES[k]||k}</td><td class="r">${v}</td></tr>`).join('')}</table>${lv.errors&&lv.errors.length?`<div class="small neg mt">${esc(lv.errors[lv.errors.length-1])}</div>`:''}`:'<div class="empty cursor">first scan running</div>';
+  $('strat').innerHTML=S.strategies.length?`<table><tr><th>Strategy</th><th class="r">Open</th><th class="r">Settled</th><th class="r">Won</th><th class="r">P&amp;L</th><th class="r">ROI</th></tr>${S.strategies.map(s=>`<tr><td>${TYPES[s.strategy]||s.strategy}</td><td class="r">${s.open}</td><td class="r">${s.settled}</td><td class="r">${s.settled?pct(s.wins/s.settled):'—'}</td><td class="r ${cls(s.pnl)}">${usd(s.pnl,true)}</td><td class="r ${cls(s.pnl)}">${s.cost?pct(s.pnl/s.cost,true):'—'}</td></tr>`).join('')}</table>`:'<div class="small">No paper trades yet.</div>';
+  $('openhint').textContent=S.open.length?`${S.open.length} contracts groups · marked at the current bid`:'';
+  $('open').innerHTML=S.open.length?`<table><tr><th>Market</th><th>Strategy</th><th>Side</th><th class="r">Qty</th><th class="r">Paid</th><th class="r">Now</th><th class="r">Cost</th><th class="r">Open P&amp;L</th><th class="r">Closes</th></tr>${S.open.map(p=>`<tr><td title="${esc(p.ticker)}">${esc((p.title||p.ticker).slice(0,58))}</td><td class="small">${TYPES[p.strategy]||p.strategy}</td><td><span class="side ${p.side==='yes'?'L':'S'}">${p.side.toUpperCase()}</span></td><td class="r">${Math.round(p.qty)}</td><td class="r">${cents(p.price)}</td><td class="r">${cents(p.mark)}</td><td class="r">${usd(p.cost)}</td><td class="r ${cls(p.upnl)}">${usd(p.upnl,true)}</td><td class="r">${until(p.close_time)}</td></tr>`).join('')}</table>`:'<div class="empty cursor">no open positions</div>';
+  $('settled').innerHTML=S.settled.length?`<table><tr><th>Settled</th><th>Market</th><th>Side</th><th>Result</th><th class="r">Cost</th><th class="r">P&amp;L</th></tr>${S.settled.map(p=>`<tr><td>${t(p.settled_at)}</td><td title="${esc(p.ticker)}">${esc((p.title||p.ticker).slice(0,46))}</td><td><span class="side ${p.side==='yes'?'L':'S'}">${p.side.toUpperCase()}</span></td><td>${esc((p.result||'').toUpperCase())}</td><td class="r">${usd(p.cost)}</td><td class="r ${cls(p.pnl)}">${usd(p.pnl,true)}</td></tr>`).join('')}</table>`:'<div class="empty">nothing settled yet</div>';
+  const W=(sc.watch||[]);
+  $('watch').innerHTML=W.length?`<table><tr><th>Market</th><th>Quote / volume</th></tr>${W.map(w=>`<tr><td>${esc(w.title.slice(0,50))}</td><td class="small">${esc(w.info.split(': ')[1]||w.info)}</td></tr>`).join('')}</table>`:'<div class="small">—</div>';
+  // research tab
+  const bt=S.backtest;
+  if(bt&&tab==='bt'){const s=bt.summary;const on=bt.rules.filter(r=>r.enabled&&r.trades);
+    const best=bt.bands.reduce((a,b)=>b.roi>a.roi?b:a,bt.bands[0]);const neg=bt.bands.filter(b=>b.roi<0).length;
+    $('btkpis').innerHTML=kpi('Markets studied',s.markets.toLocaleString(),`${s.series} series · ${s.period}`,'')+kpi('Price bands losing',`${neg} / ${bt.bands.length}`,'buying at the ask, after fees','neg')+kpi('Best band',best.label,`${pct(best.roi,true)} · 90% range ${pct(best.ci90[0],true)} to ${pct(best.ci90[1],true)}`,cls(best.roi))+(on.length?kpi(on[0].name,pct(on[0].roi,true),`${on[0].trades} trades · won ${pct(on[0].win_rate)}`,cls(on[0].roi)):'');
+    calibChart($('calib'),bt.calibration);
+    $('buckets').innerHTML=`<table><tr><th>Buy</th><th class="r">Trades</th><th class="r">Won</th><th class="r">Return</th><th class="r">90% range</th></tr>${bt.bands.map(b=>`<tr><td>${b.label}</td><td class="r">${b.trades}</td><td class="r">${pct(b.win_rate)}</td><td class="r ${cls(b.roi)}">${pct(b.roi,true)}</td><td class="r small">${pct(b.ci90[0],true)} … ${pct(b.ci90[1],true)}</td></tr>`).join('')}</table>`;
+    $('rules').innerHTML=`<table><tr><th>Rule</th><th>Status</th><th>Buys</th><th class="r">Trades</th><th class="r">Won</th><th class="r">Return</th><th class="r">90% range</th><th class="r">1st half</th><th class="r">2nd half</th></tr>${bt.rules.map(r=>`<tr><td>${r.name}</td><td>${r.enabled?'<span class="pos">ON (paper)</span>':'<span class="small">off</span>'}</td><td>${r.side.toUpperCase()} ${Math.round(r.band[0]*100)}-${Math.round(r.band[1]*100)}¢</td><td class="r">${r.trades}</td><td class="r">${pct(r.win_rate)}</td><td class="r ${cls(r.roi)}">${pct(r.roi,true)}</td><td class="r small">${r.ci90?pct(r.ci90[0],true)+' … '+pct(r.ci90[1],true):'—'}</td><td class="r ${cls(r.first_half)}">${pct(r.first_half,true)}</td><td class="r ${cls(r.second_half)}">${pct(r.second_half,true)}</td></tr>`).join('')}</table>`;
+    const shown=on[0]||bt.rules[0];$('simhint').textContent=shown?`equity curve: ${shown.name}, $25 per trade from $${bt.bankroll}`:'';
+    if(shown)lineChart($('btchart'),shown.equity,bt.bankroll,v=>'$'+Math.round(v).toLocaleString());
+    $('btnote').innerHTML='Sample: every market counts once, max 5 per series, so no single series dominates. Fills assume you pay the displayed ask plus the taker fee. A 90% range that crosses 0% means the result could be luck. Re-run research/RUN_BACKTEST.bat any time to refresh with newer data.';
+  }
+}
+let SRC=null;async function poll(){try{let r=null;if(SRC!=='static'){try{r=await fetch('/api/state',{cache:'no-store'});if(!r.ok||!(r.headers.get('content-type')||'').includes('json'))r=null;else SRC='live'}catch(e){r=null}}if(!r){r=await fetch('data.json?t='+Date.now(),{cache:'no-store'});SRC='static'}S=await r.json();render()}catch(e){$('st').textContent='OFFLINE · scanner not reachable';$('dot').className='dot off'}}
+function tick(){$('clock').textContent=new Date().toLocaleTimeString()+' local';if(S&&S.live.next_scan){const s=Math.max(0,Math.round((new Date(S.live.next_scan)-new Date())/1000));$('next').textContent=S.live.status==='scanning'?'scanning…':`next scan ${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`}}
+document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{tab=b.dataset.tab;document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('on',x===b));$('live').classList.toggle('hide',tab!=='live');$('bt').classList.toggle('hide',tab!=='bt');render()});
+addEventListener('resize',()=>render());
+poll();setInterval(poll,5000);setInterval(tick,1000);tick();
+
+</script>
+</body>
+</html>

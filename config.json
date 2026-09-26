@@ -1,0 +1,77 @@
+{
+  "bankroll": 1000,
+  "scan_minutes": 10,
+  "max_exposure": 0.8,
+  "strategies": {
+    "arb_no_basket": {
+      "enabled": true,
+      "min_edge": 0.01,
+      "max_cost": 200
+    },
+    "arb_ladder": {
+      "enabled": true,
+      "min_edge": 0.01,
+      "max_cost": 200
+    },
+    "band_rules": [
+      {
+        "name": "FAVORITE_YES",
+        "enabled": true,
+        "side": "yes",
+        "min_price": 0.9,
+        "max_price": 0.95,
+        "min_hours_left": 1,
+        "max_hours_left": 72,
+        "max_spread": 0.03,
+        "min_size": 10,
+        "min_vol24": 1,
+        "stake": 25,
+        "max_per_event": 1,
+        "max_open": 40,
+        "expected_roi": 0.024,
+        "exclude_series": [],
+        "roi_by_hours": [
+          [
+            1,
+            6,
+            0.002
+          ],
+          [
+            6,
+            24,
+            0.044
+          ],
+          [
+            24,
+            72,
+            0.032
+          ]
+        ]
+      },
+      {
+        "name": "LONGSHOT_FADE",
+        "enabled": false,
+        "side": "no",
+        "min_price": 0.88,
+        "max_price": 0.98,
+        "min_hours_left": 1,
+        "max_hours_left": 168,
+        "max_spread": 0.05,
+        "min_size": 10,
+        "min_vol24": 0,
+        "stake": 25,
+        "max_per_event": 1,
+        "max_open": 40,
+        "expected_roi": -0.045,
+        "exclude_series": []
+      }
+    ],
+    "watch_wide_spread": {
+      "enabled": true,
+      "min_spread": 0.1,
+      "min_vol24": 200
+    }
+  },
+  "dashboard_port": 8788,
+  "discord_webhook": ""
+}
